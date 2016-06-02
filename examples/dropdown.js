@@ -297,6 +297,7 @@ webpackJsonp([6],{
 	    getPopupContainer: _react.PropTypes.func,
 	    destroyPopupOnHide: _react.PropTypes.bool,
 	    mask: _react.PropTypes.bool,
+	    onPopupAlign: _react.PropTypes.func,
 	    popupAlign: _react.PropTypes.object,
 	    popupVisible: _react.PropTypes.bool,
 	    maskTransitionName: _react.PropTypes.string,
@@ -309,6 +310,7 @@ webpackJsonp([6],{
 	      getPopupClassNameFromAlign: returnEmptyString,
 	      onPopupVisibleChange: noop,
 	      afterPopupVisibleChange: noop,
+	      onPopupAlign: noop,
 	      popupClassName: '',
 	      mouseEnterDelay: 0,
 	      mouseLeaveDelay: 0.1,
@@ -356,7 +358,7 @@ webpackJsonp([6],{
 	    if (this.popupRendered) {
 	      var _ret = function () {
 	        var self = _this;
-	        _reactDom2["default"].unstable_renderSubtreeIntoContainer(_this, _this.getPopupElement(), _this.getPopupContainer(), function renderPopup() {
+	        self.popupInstance = _reactDom2["default"].unstable_renderSubtreeIntoContainer(_this, _this.getPopupElement(), _this.getPopupContainer(), function renderPopup() {
 	          /* eslint react/no-is-mounted:0 */
 	          if (this.isMounted()) {
 	            self.popupDomNode = this.getPopupDomNode();
@@ -367,7 +369,7 @@ webpackJsonp([6],{
 	            props.afterPopupVisibleChange(state.popupVisible);
 	          }
 	        });
-	        if (props.action.indexOf('click') !== -1) {
+	        if (_this.isClickToHide()) {
 	          if (state.popupVisible) {
 	            if (!_this.clickOutsideHandler) {
 	              _this.clickOutsideHandler = _rcUtil.Dom.addEventListener(document, 'mousedown', _this.onDocumentClick);
@@ -393,12 +395,7 @@ webpackJsonp([6],{
 	    var popupContainer = this.popupContainer;
 	    if (popupContainer) {
 	      _reactDom2["default"].unmountComponentAtNode(popupContainer);
-	      if (this.props.getPopupContainer) {
-	        var mountNode = this.props.getPopupContainer((0, _reactDom.findDOMNode)(this));
-	        mountNode.removeChild(popupContainer);
-	      } else {
-	        document.body.removeChild(popupContainer);
-	      }
+	      popupContainer.parentNode.removeChild(popupContainer);
 	      this.popupContainer = null;
 	    }
 	    this.clearDelayTimer();
@@ -412,12 +409,21 @@ webpackJsonp([6],{
 	  onMouseEnter: function onMouseEnter() {
 	    this.delaySetPopupVisible(true, this.props.mouseEnterDelay);
 	  },
-	  onMouseLeave: function onMouseLeave() {
+	  onMouseLeave: function onMouseLeave(e) {
+	    // https://github.com/react-component/trigger/pull/13
+	    // react bug?
+	    if (e.relatedTarget && !e.relatedTarget.setTimeout && _rcUtil.Dom.contains(this.popupContainer, e.relatedTarget)) {
+	      return;
+	    }
 	    this.delaySetPopupVisible(false, this.props.mouseLeaveDelay);
 	  },
 	  onFocus: function onFocus() {
-	    this.focusTime = Date.now();
-	    this.delaySetPopupVisible(true, this.props.focusDelay);
+	    // incase focusin and focusout
+	    this.clearDelayTimer();
+	    if (this.isFocusToShow()) {
+	      this.focusTime = Date.now();
+	      this.delaySetPopupVisible(true, this.props.focusDelay);
+	    }
 	  },
 	  onMouseDown: function onMouseDown() {
 	    this.preClickTime = Date.now();
@@ -426,7 +432,10 @@ webpackJsonp([6],{
 	    this.preTouchTime = Date.now();
 	  },
 	  onBlur: function onBlur() {
-	    this.delaySetPopupVisible(false, this.props.blurDelay);
+	    this.clearDelayTimer();
+	    if (this.isBlurToHide()) {
+	      this.delaySetPopupVisible(false, this.props.blurDelay);
+	    }
 	  },
 	  onClick: function onClick(event) {
 	    // focus will trigger click
@@ -470,12 +479,8 @@ webpackJsonp([6],{
 	  getPopupContainer: function getPopupContainer() {
 	    if (!this.popupContainer) {
 	      this.popupContainer = document.createElement('div');
-	      if (this.props.getPopupContainer) {
-	        var mountNode = this.props.getPopupContainer((0, _reactDom.findDOMNode)(this));
-	        mountNode.appendChild(this.popupContainer);
-	      } else {
-	        document.body.appendChild(this.popupContainer);
-	      }
+	      var mountNode = this.props.getPopupContainer ? this.props.getPopupContainer((0, _reactDom.findDOMNode)(this)) : document.body;
+	      mountNode.appendChild(this.popupContainer);
 	    }
 	    return this.popupContainer;
 	  },
@@ -508,9 +513,12 @@ webpackJsonp([6],{
 	  getPopupElement: function getPopupElement() {
 	    var props = this.props;
 	    var state = this.state;
+	
 	    var mouseProps = {};
-	    if (props.action.indexOf('hover') !== -1) {
+	    if (this.isMouseEnterToShow()) {
 	      mouseProps.onMouseEnter = this.onMouseEnter;
+	    }
+	    if (this.isMouseLeaveToHide()) {
 	      mouseProps.onMouseLeave = this.onMouseLeave;
 	    }
 	    return _react2["default"].createElement(
@@ -522,6 +530,7 @@ webpackJsonp([6],{
 	        className: props.popupClassName,
 	        action: props.action,
 	        align: this.getPopupAlign(),
+	        onAlign: props.onPopupAlign,
 	        animation: props.popupAnimation,
 	        getClassNameFromAlign: this.getPopupClassNameFromAlign
 	      }, mouseProps, {
@@ -609,6 +618,11 @@ webpackJsonp([6],{
 	
 	    return action.indexOf('focus') !== -1 || hideAction.indexOf('blur') !== -1;
 	  },
+	  forcePopupAlign: function forcePopupAlign() {
+	    if (this.state.popupVisible && this.popupInstance && this.popupInstance.alignInstance) {
+	      this.popupInstance.alignInstance.forceAlign();
+	    }
+	  },
 	  render: function render() {
 	    this.popupRendered = this.popupRendered || this.state.popupVisible;
 	    var props = this.props;
@@ -628,10 +642,8 @@ webpackJsonp([6],{
 	    if (this.isMouseLeaveToHide()) {
 	      newChildProps.onMouseLeave = (0, _rcUtil.createChainedFunction)(this.onMouseLeave, childProps.onMouseLeave);
 	    }
-	    if (this.isFocusToShow()) {
+	    if (this.isFocusToShow() || this.isBlurToHide()) {
 	      newChildProps.onFocus = (0, _rcUtil.createChainedFunction)(this.onFocus, childProps.onFocus);
-	    }
-	    if (this.isBlurToHide()) {
 	      newChildProps.onBlur = (0, _rcUtil.createChainedFunction)(this.onBlur, childProps.onBlur);
 	    }
 	
@@ -2791,6 +2803,7 @@ webpackJsonp([6],{
 	    visible: _react.PropTypes.bool,
 	    style: _react.PropTypes.object,
 	    getClassNameFromAlign: _react.PropTypes.func,
+	    onAlign: _react.PropTypes.func,
 	    getRootDomNode: _react.PropTypes.func,
 	    onMouseEnter: _react.PropTypes.func,
 	    align: _react.PropTypes.any,
@@ -2811,6 +2824,7 @@ webpackJsonp([6],{
 	      this.currentAlignClassName = currentAlignClassName;
 	      popupDomNode.className = this.getClassName(currentAlignClassName);
 	    }
+	    props.onAlign(popupDomNode, align);
 	  },
 	  getPopupDomNode: function getPopupDomNode() {
 	    return _reactDom2["default"].findDOMNode(this.refs.popup);
@@ -2874,6 +2888,7 @@ webpackJsonp([6],{
 	          {
 	            target: this.getTarget,
 	            key: 'popup',
+	            ref: this.saveAlign,
 	            monitorWindowResize: true,
 	            align: align,
 	            onAlign: this.onAlign
@@ -2902,6 +2917,7 @@ webpackJsonp([6],{
 	        {
 	          target: this.getTarget,
 	          key: 'popup',
+	          ref: this.saveAlign,
 	          monitorWindowResize: true,
 	          xVisible: visible,
 	          childrenProps: { visible: 'xVisible' },
@@ -2955,6 +2971,9 @@ webpackJsonp([6],{
 	    }
 	    return maskElement;
 	  },
+	  saveAlign: function saveAlign(align) {
+	    this.alignInstance = align;
+	  },
 	  render: function render() {
 	    return _react2["default"].createElement(
 	      'div',
@@ -2973,20 +2992,20 @@ webpackJsonp([6],{
 /***/ 211:
 /***/ function(module, exports, __webpack_require__) {
 
-	// export this package's api
 	'use strict';
 	
-	Object.defineProperty(exports, '__esModule', {
+	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 	
 	var _Align = __webpack_require__(212);
 	
 	var _Align2 = _interopRequireDefault(_Align);
 	
-	exports['default'] = _Align2['default'];
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+	
+	exports["default"] = _Align2["default"]; // export this package's api
+	
 	module.exports = exports['default'];
 
 /***/ },
@@ -2996,11 +3015,9 @@ webpackJsonp([6],{
 
 	'use strict';
 	
-	Object.defineProperty(exports, '__esModule', {
+	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 	
 	var _react = __webpack_require__(3);
 	
@@ -3020,8 +3037,10 @@ webpackJsonp([6],{
 	
 	var _isWindow2 = _interopRequireDefault(_isWindow);
 	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+	
 	function buffer(fn, ms) {
-	  var timer = undefined;
+	  var timer = void 0;
 	  return function bufferFn() {
 	    if (timer) {
 	      clearTimeout(timer);
@@ -3030,7 +3049,7 @@ webpackJsonp([6],{
 	  };
 	}
 	
-	var Align = _react2['default'].createClass({
+	var Align = _react2["default"].createClass({
 	  displayName: 'Align',
 	
 	  propTypes: {
@@ -3050,37 +3069,31 @@ webpackJsonp([6],{
 	        return window;
 	      },
 	      onAlign: function onAlign() {},
+	
 	      monitorBufferTime: 50,
 	      monitorWindowResize: false,
 	      disabled: false
 	    };
 	  },
-	
 	  componentDidMount: function componentDidMount() {
 	    var props = this.props;
 	    // if parent ref not attached .... use document.getElementById
-	    if (!props.disabled) {
-	      var source = _reactDom2['default'].findDOMNode(this);
-	      props.onAlign(source, (0, _domAlign2['default'])(source, props.target(), props.align));
-	      if (props.monitorWindowResize) {
-	        this.startMonitorWindowResize();
-	      }
+	    this.forceAlign();
+	    if (!props.disabled && props.monitorWindowResize) {
+	      this.startMonitorWindowResize();
 	    }
 	  },
-	
 	  componentDidUpdate: function componentDidUpdate(prevProps) {
 	    var reAlign = false;
 	    var props = this.props;
-	    var currentTarget = undefined;
 	
 	    if (!props.disabled) {
 	      if (prevProps.disabled || prevProps.align !== props.align) {
 	        reAlign = true;
-	        currentTarget = props.target();
 	      } else {
 	        var lastTarget = prevProps.target();
-	        currentTarget = props.target();
-	        if ((0, _isWindow2['default'])(lastTarget) && (0, _isWindow2['default'])(currentTarget)) {
+	        var currentTarget = props.target();
+	        if ((0, _isWindow2["default"])(lastTarget) && (0, _isWindow2["default"])(currentTarget)) {
 	          reAlign = false;
 	        } else if (lastTarget !== currentTarget) {
 	          reAlign = true;
@@ -3089,8 +3102,7 @@ webpackJsonp([6],{
 	    }
 	
 	    if (reAlign) {
-	      var source = _reactDom2['default'].findDOMNode(this);
-	      props.onAlign(source, (0, _domAlign2['default'])(source, currentTarget, props.align));
+	      this.forceAlign();
 	    }
 	
 	    if (props.monitorWindowResize && !props.disabled) {
@@ -3099,38 +3111,33 @@ webpackJsonp([6],{
 	      this.stopMonitorWindowResize();
 	    }
 	  },
-	
 	  componentWillUnmount: function componentWillUnmount() {
 	    this.stopMonitorWindowResize();
 	  },
-	
-	  onWindowResize: function onWindowResize() {
-	    var props = this.props;
-	    if (!props.disabled) {
-	      var source = _reactDom2['default'].findDOMNode(this);
-	      props.onAlign(source, (0, _domAlign2['default'])(source, props.target(), props.align));
-	    }
-	  },
-	
 	  startMonitorWindowResize: function startMonitorWindowResize() {
 	    if (!this.resizeHandler) {
-	      this.resizeHandler = _rcUtil.Dom.addEventListener(window, 'resize', buffer(this.onWindowResize, this.props.monitorBufferTime));
+	      this.resizeHandler = _rcUtil.Dom.addEventListener(window, 'resize', buffer(this.forceAlign, this.props.monitorBufferTime));
 	    }
 	  },
-	
 	  stopMonitorWindowResize: function stopMonitorWindowResize() {
 	    if (this.resizeHandler) {
 	      this.resizeHandler.remove();
 	      this.resizeHandler = null;
 	    }
 	  },
-	
+	  forceAlign: function forceAlign() {
+	    var props = this.props;
+	    if (!props.disabled) {
+	      var source = _reactDom2["default"].findDOMNode(this);
+	      props.onAlign(source, (0, _domAlign2["default"])(source, props.target(), props.align));
+	    }
+	  },
 	  render: function render() {
 	    var _props = this.props;
 	    var childrenProps = _props.childrenProps;
 	    var children = _props.children;
 	
-	    var child = _react2['default'].Children.only(children);
+	    var child = _react2["default"].Children.only(children);
 	    if (childrenProps) {
 	      var newProps = {};
 	      for (var prop in childrenProps) {
@@ -3138,13 +3145,13 @@ webpackJsonp([6],{
 	          newProps[prop] = this.props[childrenProps[prop]];
 	        }
 	      }
-	      return _react2['default'].cloneElement(child, newProps);
+	      return _react2["default"].cloneElement(child, newProps);
 	    }
 	    return child;
 	  }
 	});
 	
-	exports['default'] = Align;
+	exports["default"] = Align;
 	module.exports = exports['default'];
 
 /***/ },
@@ -3197,6 +3204,14 @@ webpackJsonp([6],{
 	
 	function isFailY(elFuturePos, elRegion, visibleRect) {
 	  return elFuturePos.top < visibleRect.top || elFuturePos.top + elRegion.height > visibleRect.bottom;
+	}
+	
+	function isCompleteFailX(elFuturePos, elRegion, visibleRect) {
+	  return elFuturePos.left > visibleRect.right || elFuturePos.left + elRegion.width < visibleRect.left;
+	}
+	
+	function isCompleteFailY(elFuturePos, elRegion, visibleRect) {
+	  return elFuturePos.top > visibleRect.bottom || elFuturePos.top + elRegion.height < visibleRect.top;
 	}
 	
 	function flip(points, reg, map) {
@@ -3261,30 +3276,42 @@ webpackJsonp([6],{
 	    if (overflow.adjustX) {
 	      // 如果横向不能放下
 	      if (isFailX(elFuturePos, elRegion, visibleRect)) {
-	        fail = 1;
 	        // 对齐位置反下
-	        points = flip(points, /[lr]/ig, {
+	        var newPoints = flip(points, /[lr]/ig, {
 	          l: 'r',
 	          r: 'l'
 	        });
 	        // 偏移量也反下
-	        offset = flipOffset(offset, 0);
-	        targetOffset = flipOffset(targetOffset, 0);
+	        var newOffset = flipOffset(offset, 0);
+	        var newTargetOffset = flipOffset(targetOffset, 0);
+	        var newElFuturePos = (0, _getElFuturePos2['default'])(elRegion, refNodeRegion, newPoints, newOffset, newTargetOffset);
+	        if (!isCompleteFailX(newElFuturePos, elRegion, visibleRect)) {
+	          fail = 1;
+	          points = newPoints;
+	          offset = newOffset;
+	          targetOffset = newTargetOffset;
+	        }
 	      }
 	    }
 	
 	    if (overflow.adjustY) {
 	      // 如果纵向不能放下
 	      if (isFailY(elFuturePos, elRegion, visibleRect)) {
-	        fail = 1;
 	        // 对齐位置反下
-	        points = flip(points, /[tb]/ig, {
+	        var newPoints = flip(points, /[tb]/ig, {
 	          t: 'b',
 	          b: 't'
 	        });
 	        // 偏移量也反下
-	        offset = flipOffset(offset, 1);
-	        targetOffset = flipOffset(targetOffset, 1);
+	        var newOffset = flipOffset(offset, 1);
+	        var newTargetOffset = flipOffset(targetOffset, 1);
+	        var newElFuturePos = (0, _getElFuturePos2['default'])(elRegion, refNodeRegion, newPoints, newOffset, newTargetOffset);
+	        if (!isCompleteFailY(newElFuturePos, elRegion, visibleRect)) {
+	          fail = 1;
+	          points = newPoints;
+	          offset = newOffset;
+	          targetOffset = newTargetOffset;
+	        }
 	      }
 	    }
 	
@@ -4193,14 +4220,12 @@ webpackJsonp([6],{
 	  value: true
 	});
 	exports["default"] = isWindow;
-	
 	function isWindow(obj) {
 	  /* eslint no-eq-null: 0 */
 	  /* eslint eqeqeq: 0 */
 	  return obj != null && obj == obj.window;
 	}
-	
-	module.exports = exports["default"];
+	module.exports = exports['default'];
 
 /***/ },
 
