@@ -26,14 +26,18 @@ module.exports = {
       test: /\.js$/,
       loaders: ['babel'],
       exclude: /node_modules/
-    }]
-  },
+    },
+    {
+      test: /\.less$/,
+      loader: "style!css!less"
+    }
+  ]},
   output: {
     library: 'library-boilerplate',
     libraryTarget: 'umd'
   },
   plugins: plugins,
   resolve: {
-    extensions: ['', '.js']
+    extensions: ['', '.js', '.jsx']
   }
 };
