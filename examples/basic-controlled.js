@@ -1,7 +1,7 @@
 import 'rc-tree/assets/index.less';
 import React, {PropTypes} from 'react';
 import ReactDOM from 'react-dom';
-import Tree, {TreeNode} from 'rc-tree';
+import Tree, {TreeNode} from 'react-tree';
 import { gData, /* filterParentPosition, getFilterExpandedKeys,*/ getRadioSelectKeys } from './util';
 
 const Demo = React.createClass({

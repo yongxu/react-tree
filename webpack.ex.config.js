@@ -20,7 +20,7 @@ module.exports = {
   resolve: {
     root: path.resolve(__dirname),
     alias: {
-      'rc-tree': 'src'
+      'react-tree': 'src'
     },
     extensions: ['', '.js', '.jsx']
   },

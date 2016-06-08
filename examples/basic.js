@@ -2,7 +2,7 @@ import 'rc-tree/assets/index.less';
 import './basic.less';
 import React, {PropTypes} from 'react';
 import ReactDOM from 'react-dom';
-import Tree, {TreeNode} from 'rc-tree';
+import Tree, {TreeNode} from 'react-tree';
 
 const Demo = React.createClass({
   propTypes: {

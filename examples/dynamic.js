@@ -1,7 +1,7 @@
 import '../assets/index.less';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Tree, {TreeNode} from 'rc-tree';
+import Tree, {TreeNode} from 'react-tree';
 
 function generateTreeNodes(treeNode) {
   const arr = [];

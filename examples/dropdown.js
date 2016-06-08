@@ -3,7 +3,7 @@ import 'rc-tree/assets/index.less';
 import './dropdown.less';
 import React, {PropTypes} from 'react';
 import ReactDOM from 'react-dom';
-import Tree, {TreeNode} from 'rc-tree';
+import Tree, {TreeNode} from 'react-tree';
 import Trigger from 'rc-trigger';
 import { gData } from './util';
 
