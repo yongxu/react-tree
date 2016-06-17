@@ -1,5 +1,2 @@
-import Tree from './Tree';
-import TreeNode from './TreeNode';
-Tree.TreeNode = TreeNode;
-
-export default Tree;
+export const TreeNode = require('./TreeNode').default;
+export default from './Tree';

@@ -1,5 +1,8 @@
 var path = require('path');
 var webpack = require('webpack');
+var autoprefixer = require('autoprefixer');
+var precss       = require('precss');
+var postcssImport = require('postcss-import');
 
 module.exports = {
   devtool: 'eval',
@@ -36,8 +39,19 @@ module.exports = {
     },
     {
       test: /\.css$/,
-      loader: "style!css"
+      loader: "style-loader!css?sourceMap&modules&importLoaders=1&localIdentName=[name]__[local]___[hash:base64:5]!postcss-loader"
     }]
+  },
+
+  postcss: function () {
+    return [
+      postcssImport({
+        path: [srcPath, path.resolve(srcPath, 'styles')],
+        addDependencyTo: webpack
+      }),
+      autoprefixer,
+      precss
+    ];
   },
   devServer: {
     contentBase: '.',

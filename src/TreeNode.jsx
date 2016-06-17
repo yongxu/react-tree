@@ -1,5 +1,4 @@
 import React, {PropTypes} from 'react';
-import assign from 'object-assign';
 import classNames from 'classnames';
 import Animate from 'rc-animate';
 import { browser } from './util';
@@ -14,20 +13,6 @@ const defaultTitle = '---';
 class TreeNode extends React.Component {
   constructor(props) {
     super(props);
-    [
-      'onExpand',
-      'onCheck',
-      'onContextMenu',
-      'onMouseEnter',
-      'onMouseLeave',
-      'onDragStart',
-      'onDragEnter',
-      'onDragOver',
-      'onDragLeave',
-      'onDrop',
-    ].forEach((m)=> {
-      this[m] = this[m].bind(this);
-    });
     this.state = {
       dataLoading: false,
       dragNodeHighlight: false,
@@ -41,30 +26,30 @@ class TreeNode extends React.Component {
     this.props.root._treeNodeInstances.push(this);
   }
 
-  onCheck() {
+  onCheck = () => {
     this.props.root.onCheck(this);
   }
 
-  onSelect() {
+  onSelect = () => {
     this.props.root.onSelect(this);
   }
 
-  onMouseEnter(e) {
+  onMouseEnter = (e) => {
     e.preventDefault();
     this.props.root.onMouseEnter(e, this);
   }
 
-  onMouseLeave(e) {
+  onMouseLeave = (e) => {
     e.preventDefault();
     this.props.root.onMouseLeave(e, this);
   }
 
-  onContextMenu(e) {
+  onContextMenu = (e) => {
     e.preventDefault();
     this.props.root.onContextMenu(e, this);
   }
 
-  onDragStart(e) {
+  onDragStart = (e) => {
     // console.log('dragstart', this.props.eventKey, e);
     // e.preventDefault();
     e.stopPropagation();
@@ -80,14 +65,14 @@ class TreeNode extends React.Component {
     }
   }
 
-  onDragEnter(e) {
+  onDragEnter = (e) => {
     // console.log('dragenter', this.props.eventKey, e);
     e.preventDefault();
     e.stopPropagation();
     this.props.root.onDragEnter(e, this);
   }
 
-  onDragOver(e) {
+  onDragOver = (e) => {
     // console.log(this.props.eventKey, e);
     // todo disabled
     e.preventDefault();
@@ -96,13 +81,13 @@ class TreeNode extends React.Component {
     return false;
   }
 
-  onDragLeave(e) {
+  onDragLeave = (e) => {
     // console.log(this.props.eventKey, e);
     e.stopPropagation();
     this.props.root.onDragLeave(e, this);
   }
 
-  onDrop(e) {
+  onDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     this.setState({
@@ -111,7 +96,7 @@ class TreeNode extends React.Component {
     this.props.root.onDrop(e, this);
   }
 
-  onExpand() {
+  onExpand = () => {
     const callbackPromise = this.props.root.onExpand(this);
     if (callbackPromise && typeof callbackPromise === 'object') {
       const setLoading = (dataLoading) => {
@@ -199,7 +184,7 @@ class TreeNode extends React.Component {
       if (props.openTransitionName) {
         animProps.transitionName = props.openTransitionName;
       } else if (typeof props.openAnimation === 'object') {
-        animProps.animation = assign({}, props.openAnimation);
+        animProps.animation = {...props.openAnimation};
         if (!transitionAppear) {
           delete animProps.animation.appear;
         }
